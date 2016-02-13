@@ -9,18 +9,21 @@
 #include <util/delay.h>
 
 #include "modes.h"
+#include "dsp.h"
 #include "colours.h"
 #include "leds.h"
 
 static void modes_circle(void);
 static void modes_fill(void);
 static void modes_fade(void);
+static void modes_audio(void);
 
 /* Array of function pointers - the "mode list" */
 void (*modes_list[])(void) = {
-    modes_circle,
-    modes_fill,
-    modes_fade,
+    /*modes_circle,*/
+    /*modes_fill,*/
+    /*modes_fade,*/
+    modes_audio,
 };
 
 uint8_t modes_count = sizeof(modes_list)/sizeof(modes_list[0]);
@@ -84,5 +87,24 @@ static void modes_fade()
 
             colour = (colour + 1) & 0x3F;
         }
+    }
+}
+
+static void modes_audio()
+{
+    uint8_t colour=0;
+    dsp_init();
+    while(1) {
+        uint8_t i;
+        uint8_t num = dsp_audio_level >> 4;
+
+        for(i=0; i<num; i++) {
+            colours_set(&LEDS[i], colours_saturated, colour);
+        }
+        for(; i<16; i++) {
+            colours_black(&LEDS[i]);
+        }
+
+        leds_draw();
     }
 }

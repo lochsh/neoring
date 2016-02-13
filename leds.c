@@ -20,6 +20,9 @@ void leds_draw()
          * %1 - small counter, number of bits sent in byte
          * %2 - value, current value to send
          */
+        /* Disable all interrupts */
+        "    cli                \n\t"
+
         /* Send RESET signal for ~55us */
         "    cbi  24, 0         \n\t" /* 2   cycles */
         "    ldi  %0, 140       \n\t" /* 1   cycles */
@@ -54,6 +57,9 @@ void leds_draw()
         /* Check if we've done all 48 bytes */
         "l5: dec %0             \n\t" /* 1   cycles */
         "    brne l1            \n\t" /* 1/2 cycles */
+
+        /* Re-enable interrupts */
+        "    sei                \n\t"
     : "+a"(a), "+a"(b), "+a"(c)
     : [LEDS] "e" (LEDS)
     :

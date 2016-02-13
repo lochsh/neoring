@@ -16,3 +16,6 @@ hex: elf
 
 flash: hex
 	avrdude -c usbtiny -p t85 -U flash:w:main.hex:i
+
+clean:
+	rm -f $(OBJS) main.hex main.elf
