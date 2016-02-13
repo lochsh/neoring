@@ -1,0 +1,2 @@
+-D __AVR_ATtiny85__
+-I /usr/lib/avr/include
