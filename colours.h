@@ -1,19 +1,13 @@
 /*
  * colours.h
- * lots of colours
+ * Deal with LED colours
  */
 #ifndef COLOURS_H
 #define COLOURS_H
 
-#include <avr/pgmspace.h>
-#include "leds.h"
+#include <stdint.h>
 
-extern const uint8_t colours_saturated[3][64] PROGMEM;
-
-/* Set LED to a colour from cmap */
-void colours_set(volatile LED* led, const uint8_t cmap[3][64], const uint8_t idx);
-
-/* Set LED to off */
-void colours_black(volatile LED* led);
+/* Set an LED (0-15) to a certain hue (0-31) and value (0-31). */
+void colours_set(const uint8_t led, const uint8_t hue, const uint8_t val);
 
 #endif

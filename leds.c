@@ -20,8 +20,6 @@ void leds_draw()
          * %1 - small counter, number of bits sent in byte
          * %2 - value, current value to send
          */
-        /* Disable all interrupts */
-        "    cli                \n\t"
 
         /* Send RESET signal for ~55us */
         "    cbi  24, 0         \n\t" /* 2   cycles */
@@ -36,8 +34,12 @@ void leds_draw()
         "l1: ld  %2, %a[LEDS]+  \n\t" /* 2   cycles */
         "    ldi %1, 8          \n\t" /* 1   cycles */
 
+        /* Disable all interrupts (not OK to interrupt during LEDs) */
+        "    cli                \n\t"
+
         /* Start sending the HIGH pulse */
         "l2: sbi 24, 0          \n\t" /* 2   cycles */
+
         /* Read the next bit of this byte, and branch if it's 1 */
         "    lsl  %2            \n\t" /* 1   cycles */
         "    brcs l3            \n\t" /* 1/2 cycles */
@@ -54,12 +56,12 @@ void leds_draw()
         "l4: dec %1             \n\t" /* 1   cycles */
         "    brne l2            \n\t" /* 1/2 cycles */
 
-        /* Check if we've done all 48 bytes */
-        "l5: dec %0             \n\t" /* 1   cycles */
-        "    brne l1            \n\t" /* 1/2 cycles */
-
-        /* Re-enable interrupts */
+        /* Re-enable interrupts (OK to interrupt between LEDs for <50us) */
         "    sei                \n\t"
+
+        /* Check if we've done all 48 bytes */
+        "    dec %0             \n\t" /* 1   cycles */
+        "    brne l1            \n\t" /* 1/2 cycles */
     : "+a"(a), "+a"(b), "+a"(c)
     : [LEDS] "e" (LEDS)
     :

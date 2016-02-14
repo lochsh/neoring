@@ -1,29 +1,15 @@
 /*
  * colours.c
- * lots of course
+ * Deal with LED colours
  */
+#include <avr/pgmspace.h>
 #include "colours.h"
+#include "leds.h"
+#include "luts.h"
 
-const uint8_t colours_saturated[3][64] PROGMEM = {
-    {
-     255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 247, 223, 199, 175, 151, 127, 103, 79, 55, 31, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 31, 55, 79, 103, 127, 151, 175, 199, 223, 247, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255
-    }, {
-     0, 23, 47, 71, 95, 119, 143, 167, 191, 215, 239, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 231, 207, 183, 159, 135, 111, 87, 63, 39, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-    }, {
-     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 15, 39, 63, 87, 111, 135, 159, 183, 207, 231, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 239, 215, 191, 167, 143, 119, 95, 71, 47, 23
-    }
-};
-
-void colours_set(volatile LED* led, const uint8_t cmap[3][64], const uint8_t idx)
+void colours_set(const uint8_t led, const uint8_t hue, const uint8_t val)
 {
-    led->R = pgm_read_byte(&(cmap[0][idx]));
-    led->G = pgm_read_byte(&(cmap[1][idx]));
-    led->B = pgm_read_byte(&(cmap[2][idx]));
-}
-
-void colours_black(volatile LED* led)
-{
-    led->R = 0;
-    led->G = 0;
-    led->B = 0;
+    LEDS[led].R = pgm_read_byte(&(lut_colour[hue][val][0]));
+    LEDS[led].G = pgm_read_byte(&(lut_colour[hue][val][1]));
+    LEDS[led].B = pgm_read_byte(&(lut_colour[hue][val][2]));
 }

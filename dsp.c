@@ -1,22 +1,16 @@
-#include "dsp.h"
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include <avr/pgmspace.h>
+#include "dsp.h"
+#include "luts.h"
 
 /* Output the current detected audio level. */
 volatile uint8_t dsp_audio_level = 0;
 
-/* See filters.py for generation.
- * Low pass filter with cutoff around 1/16 nyquist,
- * which is around 150Hz for 4800Hz sampling.
- */
-static const int8_t lpf_h[31] = {
-    0, 1, 1, 2, 3, 3, 4, 4, 5, 5, 6, 6, 6, 7, 7, 7,
-    7, 7, 6, 6, 6, 5, 5, 4, 4, 3, 3, 2, 1, 1, 0
-};
-
-/* Store low pass filter shift register */
-static volatile int8_t lpf_z[31];
-static volatile int8_t* lpf_z_p = lpf_z;
+/* Store CIC filter related variables. */
+static volatile int16_t cic_i_reg = 0;
+static volatile int16_t cic_c_reg = 0;
+static volatile uint8_t cic_decimator = 0;
 
 /* Set up the ADC */
 static void adc_init()
@@ -35,59 +29,25 @@ static void adc_init()
     ADCSRA |= (1<<ADSC);
 }
 
-/*
- * Call to start up the DSP systems */
+/* Call to start up the DSP systems */
 void dsp_init()
 {
-    /* Initialise the LPF filter */
-    uint8_t i;
-    for(i=0; i<31; i++) {
-        lpf_z[i] = 0;
-    }
-
-    /* Initialise the ADC */
     adc_init();
 }
 
-/* ADC interrupt is where the magic happens */
+/*
+ * ADC interrupt routine called at 4800Hz.
+ * Reads ADC, preprocesses to remove DC bias and square using a lookup table
+ * that returns the higher result bits in an int8_t,
+ * then runs through a 1st-order R=D=256 CIC filter to low-pass and decimate,
+ * outputs uint8_t result 0-255 at 4800Hz/256=18.75Hz.
+ */
 ISR(ADC_vect)
 {
-    /* Just do a real basic current-volume thing */
-    int8_t x = ADCH - 127;
-    if(x < 0) {
-        dsp_audio_level = 2*(uint8_t)(-x);
-    } else {
-        dsp_audio_level = 2*(uint8_t)(x);
+    int8_t x = pgm_read_byte(&(lut_dsp_input[ADCH]));
+    cic_i_reg += x;
+    if(++cic_decimator == 0) {
+        dsp_audio_level = (uint16_t)(cic_i_reg - cic_c_reg) >> 7;
+        cic_c_reg = cic_i_reg;
     }
-
-    /* Insert ADC reading into LPF shift reg */
-    /**lpf_z_p = ADCH - 127;*/
-
-    /* Process filter */
-    /*int16_t acc = 0;*/
-    /*int8_t i, j = 0;*/
-
-    /* Current position to start inclusive */
-    /*for(i=(lpf_z_p - lpf_z); i>=0; i--) {*/
-        /*acc += lpf_h[j++] * lpf_z[i];*/
-    /*}*/
-
-    /* End to current position exclusive */
-    /*for(i=30; i>(lpf_z_p - lpf_z); i--) {*/
-        /*acc += lpf_h[j++] * lpf_z[i];*/
-    /*}*/
-
-    /* Output 2*abs(y) */
-    /*int8_t y = acc >> 8;*/
-    /*if(y >= 0) {*/
-        /*dsp_audio_level = 2 * (uint8_t)y;*/
-    /*} else {*/
-        /*dsp_audio_level = 2 * (uint8_t)(-y);*/
-    /*}*/
-
-    /* Update LPF pointer */
-    /*lpf_z_p++;*/
-    /*if(lpf_z_p > lpf_z + 30) {*/
-        /*lpf_z_p = lpf_z;*/
-    /*}*/
 }

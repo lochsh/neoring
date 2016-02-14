@@ -1,5 +1,5 @@
 SOURCES = $(wildcard *.c)
-CFLAGS = -Wall -Wextra --std=c99 -Os -DF_CPU=8000000 -mmcu=attiny85
+CFLAGS = -Wall -Wextra --std=c99 -O1 -DF_CPU=8000000 -mmcu=attiny85
 
 OBJS = $(SOURCES:.c=.o)
 
@@ -10,6 +10,7 @@ all: hex
 
 elf: $(OBJS)
 	avr-gcc $(CFLAGS) -o main.elf $(OBJS)
+	avr-size main.elf
 
 hex: elf
 	avr-objcopy -j .text -j .data -O ihex main.elf main.hex
