@@ -13,23 +13,25 @@
 #include "colours.h"
 #include "leds.h"
 
-static void modes_circle(void);
-static void modes_fill(void);
+static void modes_spin(void);
+static void modes_fill_rotate(void);
 static void modes_fade(void);
-static void modes_audio(void);
+static void modes_audio_vu(void);
+static void modes_audio_fade(void);
 
 /* Array of function pointers - the "mode list" */
 void (*modes_list[])(void) = {
-    modes_circle,
-    modes_fill,
+    modes_spin,
+    modes_fill_rotate,
     modes_fade,
-    modes_audio,
+    modes_audio_vu,
+    modes_audio_fade,
 };
 
 uint8_t modes_count = sizeof(modes_list)/sizeof(modes_list[0]);
 
 /* Spin around the circle */
-static void modes_circle()
+static void modes_spin()
 {
     uint8_t i;
     while(1) {
@@ -43,7 +45,7 @@ static void modes_circle()
 }
 
 /* Fill up the circle while moving start point around */
-static void modes_fill()
+static void modes_fill_rotate()
 {
     uint8_t start, i;
     /* For each starting point */
@@ -90,7 +92,7 @@ static void modes_fade()
     }
 }
 
-static void modes_audio()
+static void modes_audio_vu()
 {
     uint8_t i;
 
@@ -101,13 +103,13 @@ static void modes_audio()
     /* Default step is 32 for full-range (256/8), smaller amplifies signal. */
     uint8_t step = 16;
 
-    /* Start up the DSP engine */
-    dsp_init();
-
     /* Clear the LEDS initially */
     for(i=0; i<16; i++) {
         LEDS[i].R = LEDS[i].G = LEDS[i].B = 0;
     }
+
+    /* Start up the DSP engine */
+    dsp_init();
 
     while(1) {
         /* Compute appropriate step_gain */
@@ -152,6 +154,31 @@ static void modes_audio()
         LEDS[7].G = LEDS[15].G = intensities[6] >> 1;
         LEDS[7].R = LEDS[15].R = intensities[6];
         LEDS[8].R = LEDS[ 0].R = intensities[7];
+
+        leds_draw();
+    }
+}
+
+static void modes_audio_fade()
+{
+    uint8_t i;
+    uint16_t hue = 0;
+    uint8_t val = 0;
+
+    for(i=0; i<16; i++) {
+        LEDS[i].R = LEDS[i].G = LEDS[i].B = 0;
+    }
+
+    dsp_init();
+
+    while(1) {
+        val = dsp_audio_level >> 1;
+        if(val > 31) val = 31;
+        hue += val;
+
+        for(i=0; i<16; i++) {
+            colours_set(i, hue>>11, val);
+        }
 
         leds_draw();
     }
